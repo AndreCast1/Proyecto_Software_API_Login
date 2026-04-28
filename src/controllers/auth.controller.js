@@ -3,9 +3,19 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
-  const { nombre, email, password, rol } = req.body;
+  const { nombre, email, password } = req.body;
 
   try {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: 'La contraseña debe tener mayúscula, minúscula y número'
+      });
+    }
+
+    const rol = 'user'; 
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const { data, error } = await supabase
@@ -16,7 +26,6 @@ exports.register = async (req, res) => {
       .select();
 
     if (error) {
-      console.error('Supabase error:', error);
       if (error.code === '23505') {
         return res.status(400).json({ error: 'Email ya existe' });
       }
@@ -29,7 +38,6 @@ exports.register = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Server error:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
